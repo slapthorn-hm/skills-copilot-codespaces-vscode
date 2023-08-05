@@ -68,3 +68,5 @@ app.delete('/comments/:id', function(req, res){
 app.listen(3000, function(){
     console.log('Now listening for requests on port 3000');
 });
+
+// respond to a web request 
