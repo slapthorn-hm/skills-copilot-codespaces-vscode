@@ -1,82 +1,70 @@
-// create web server
+// Create web server
+// 1. npm install express
+// 2. npm install body-parser
+// 3. npm install mongoose
+// 4. npm install cors
+
 const express = require('express');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const cors = require('cors');
+
+// import the comment model
+const Comment = require('./models/comment');
+
+// create express app
 const app = express();
-const port = 5000;
 
-// import comments data
-const comments = require('./data/comments');
-
-// import products data
-const products = require('./data/products');
-
-// import reviews data
-const reviews = require('./data/reviews');
-
-// import path module
-const path = require('path');
-
-// import ejs
-const ejs = require('ejs');
-
-// set view engine to ejs
-app.set('view engine', 'ejs');
-
-// set path to views folder
-app.set('views', path.join(__dirname, 'views'));
-
-// set path to public folder
-app.use(express.static(path.join(__dirname, 'public')));
-
-// render index page
-app.get('/', (req, res) => {
-  res.render('pages/index', {
-    title: 'Home',
-    products: products.getAllProducts()
-  });
+// connect to mongodb
+mongoose.connect('mongodb://localhost:27017/comments');
+mongoose.connection.once('open', function(){
+    console.log('Connection has been made, now make fireworks...');
+}).on('error', function(error){
+    console.log('Connection error:', error);
 });
 
-// render about page
-app.get('/about', (req, res) => {
-  res.render('pages/about', {
-    title: 'About'
-  });
+// enable CORS
+app.use(cors());
+
+// use body-parser middleware
+app.use(bodyParser.json());
+
+// create routes
+app.get('/', function(req, res){
+    res.send('Hello from server');
 });
 
-// render products page
-app.get('/products', (req, res) => {
-  res.render('pages/products', {
-    title: 'Products',
-    products: products.getAllProducts()
-  });
+// get all comments from database
+app.get('/comments', function(req, res){
+    Comment.find({}).then(function(comments){
+        res.send(comments);
+    });
 });
 
-// render product page
-app.get('/product/:id', (req, res) => {
-  res.render('pages/product', {
-    title: 'Product',
-    product: products.getProduct(req.params.id),
-    reviews: reviews.getReviewsByProductId(req.params.id)
-  });
+// add a new comment to database
+app.post('/comments', function(req, res){
+    Comment.create(req.body).then(function(comment){
+        res.send(comment);
+    });
 });
 
-// render comments page
-app.get('/comments', (req, res) => {
-  res.render('pages/comments', {
-    title: 'Comments',
-    comments: comments.getAllComments()
-  });
+// edit an existing comment in database
+app.put('/comments/:id', function(req, res){
+    Comment.findByIdAndUpdate({_id: req.params.id}, req.body).then(function(){
+        Comment.findOne({_id: req.params.id}).then(function(comment){
+            res.send(comment);
+        });
+    });
 });
 
-// render comment page
-app.get('/comment/:id', (req, res) => {
-  res.render('pages/comment', {
-    title: 'Comment',
-    comment: comments.getComment(req.params.id)
-  });
+// delete an existing comment from database
+app.delete('/comments/:id', function(req, res){
+    Comment.findByIdAndRemove({_id: req.params.id}).then(function(comment){
+        res.send(comment);
+    });
 });
 
-// start server
-app.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}`);
+// listen for requests
+app.listen(3000, function(){
+    console.log('Now listening for requests on port 3000');
 });
-
